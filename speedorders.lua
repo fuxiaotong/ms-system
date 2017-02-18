@@ -32,16 +32,13 @@ if not bean then
 end
 local ok, err = bean:connect()
 
-local ok, err = bean:use("smallfish")
+local ok, err = bean:use("ms_queue")
 if not ok then
     ngx.say("-----")
 end
-local id, err = bean:put("hello")
+local id, err = bean:put(args)
 if not id then
     ngx.say("err")
 end
-local id, data = bean:peek(id)
-ngx.log(ngx.ERR, "peek ok:", data);
 
 bean:set_keepalive(0, 100)
-ngx.say("-----")
