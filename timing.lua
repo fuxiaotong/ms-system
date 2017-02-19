@@ -1,5 +1,4 @@
-
-local handle = function ()
+local consum_handle = function ()
     local beanstalkd = require 'resty.beanstalkd'
     local redis = require 'resty.redis'
     local cjson = require 'cjson'
@@ -24,7 +23,7 @@ local handle = function ()
                 ngx.log(ngx.ERR, "faile to connect redis: ", err)
                 return
             end
-            local res, err = red:hmget("ms_barcode", "switch", "userid", "maxcount", "remain")
+            local res, err = red:hmget("ms_" .. value['barcode'], "switch", "userid", "maxcount", "remain")
             
             for i,v in ipairs(res) do
                 ngx.log(ngx.ERR, "key: ", i, " value: ", v)
@@ -49,7 +48,7 @@ local handle = function ()
                 else
                     remainNum = remainNum - 1
                 end
-                local setRes, err = red:hmset("ms_barcode", "switch", res[1], 
+                local setRes, err = red:hmset("ms_" .. value['barcode'], "switch", res[1], 
                                     "userid", userlist, "remain", tostring(remainNum))
                 local ok, err = red:set_keepalive(10000, 100)
                 if not ok then
@@ -66,33 +65,50 @@ local handle = function ()
         bean:set_keepalive(0,100) 
     end
 end
+if ngx.worker.id() ~= -1 then
+    local consum_timer_ok, err = ngx.timer.at(0, consum_handle)
+end
 
-local ok, err = ngx.timer.at(0, handle)
 
--- local delay = 5
--- local handler
--- handler = function()
---     local ok, err = ngx.timer.at(delay, handler)
---     if not ok then
---         ngx.log(ngx.ERR, "fail")
---         return
---     end
---     ngx.log(ngx.ERR, "succeed")
--- end
+local delay = 5
+local update_handler
+update_handler = function()
+    local ok, err = ngx.timer.at(delay, update_handler)
+    if not ok then
+        ngx.log(ngx.ERR, "fail creat timer")
+        return
+    end
+    local redis = require 'resty.redis'
+    local cjson = require 'cjson'
+    local red = redis:new()
+    red:set_timeout(1000)
+    local ok, err = red:connect("127.0.0.1", 6379)
+    if not ok then
+        ngx.log(ngx.ERR, "faile to connect redis: ", err)
+        return
+    end
+    local res, err = red:smembers("ms_list_barcode")
 
--- ngx.log(ngx.ERR, "ssss")
--- local ok, err = ngx.timer.at(0, handler)
--- if not ok then
---     return
--- end
+    local lruVal =  {}
+    for i,v in ipairs(res) do
+        local res_data, err = red:hgetall("ms_" .. v) 
+        for k=1,#(res_data),2 do
+            lruVal[res_data[k]] = res_data[k+1]
+            -- ngx.log(ngx.ERR, "keyuuu: ", res_data[k], " value: ", res_data[k+1])
+        end
+        local lru = require 'mylrucache'
+        -- ngx.log(ngx.ERR, ">>", "ms_" .. v)
 
--- hd_bean = function ()
---     local id, data = bean:reserve()
---     ngx.log(ngx.ERR, "======data:", data)
---     local ok, err = bean:bury(id)
--- end
+        lru.set("ms_" .. v, lruVal)
+        -- ngx.log(ngx.ERR, ">>>", cjson.encode(oo))
+    end
 
--- local ok, err = ngx.timer.at(0, hd_bean)
--- if not ok then
---     return
--- end
+    local ok, err = red:set_keepalive(10000, 100)
+end
+
+if ngx.worker.id() ~= -1 then
+    local update_timer_ok, err = ngx.timer.at(0, update_handler)
+    if not ok then
+        return
+    end
+end
