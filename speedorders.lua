@@ -23,9 +23,6 @@ end
 
 ngx.say(args)
 
-
-ngx.say("----------------------")
-
 local bean, err = beanstalkd:new()
 if not bean then
    ngx.say("fail--")
