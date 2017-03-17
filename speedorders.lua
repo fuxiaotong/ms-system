@@ -39,3 +39,5 @@ if not id then
 end
 
 bean:set_keepalive(0, 100)
+
+-- curl 127.0.0.1/api/speedorders -d "{\"barcode\":\"123\",\"userid\":\"77\"}"
