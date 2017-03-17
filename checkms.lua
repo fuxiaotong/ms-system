@@ -17,7 +17,8 @@ if barcodeInfo["switch"] == "0" then
         ngx.say("success to buy the product, barcode:", data['barcode'])
     end
 elseif barcodeInfo["switch"] == "1" then
-    if barcodeInfo["userid"][data["userid"]] == nil then
+   local userArr = cjson.decode(barcodeInfo["userid"])                                                                                                                                                                          
+   if userArr[data["userid"]] == nil then
         ngx.say("please wait a minute to check again, barcode:", data['barcode'])
     else
         ngx.say("success to buy the product, barcode:", data['barcode'])
@@ -26,4 +27,4 @@ else
     ngx.exit(500)
 end
 
-
+-- curl 127.0.0.1/api/checkms -d "{\"barcode\":\"123\",\"userid\":\"77\"}"
