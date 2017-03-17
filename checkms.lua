@@ -11,7 +11,8 @@ local data ={}
 data = cjson.decode(args)
 local barcodeInfo = lrucache.get("ms_" .. data['barcode'])
 if barcodeInfo["switch"] == "0" then
-    if barcodeInfo["userid"][data["userid"]] == nil then
+   local userArr = cjson.decode(barcodeInfo["userid"])                                                                                                                                                                          
+   if userArr[data["userid"]] == nil then
         ngx.say("fail to buy the product, barcode:", data['barcode'])
     else
         ngx.say("success to buy the product, barcode:", data['barcode'])
