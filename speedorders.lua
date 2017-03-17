@@ -41,3 +41,5 @@ end
 bean:set_keepalive(0, 100)
 
 -- curl 127.0.0.1/api/speedorders -d "{\"barcode\":\"123\",\"userid\":\"77\"}"
+-- hmset ms_123 switch 1 userid "" maxcount 100 remain 100
+-- sadd ms_list_barcode "123"
